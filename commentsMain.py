@@ -20,6 +20,9 @@
 # COMMAND ----------
 
 import pandas as pd
+from dotenv import load_dotenv
+import os
+
 '''
 from commentsUtils import getQueryPairs
 from apiUtils import getYesterday
@@ -38,6 +41,8 @@ from commentsFlagUtils import flagList
 
 # COMMAND ----------
 
+load_dotenv()
+
 interval=7
 iconic_taxa='insecta' 
 maxCountTrials=100 
@@ -54,8 +59,9 @@ toBeFlaggedList =[r"\b(new specie)\b",
                   r"\b(cfia)\b",
                   r"\b(canadian food inspection agency)\b"
         ]
-#receiver_email = ['geetika.sharma@canada.ca']
-receiver_email = ['geetika.sharma@canada.ca','noureddine.meraihi@canada.ca','david.holden@canada.ca','desiree.cooper@canada.ca', 'kara.soares@canada.ca', 'jason.watts@canada.ca', 'jean-michel.gagne@canada.ca','olivier.morin2@canada.ca','ron.neville@canada.ca','erin.bullas-appleton@canada.ca','thierry.poire@canada.ca','cfia.surveillance-surveillance.acia@canada.ca','andrea.sissons@canada.ca','graham.thurston@canada.ca','Amy.Robson@Canada.ca','haydar.alturaihi@canada.ca','allison.groenen@canada.ca','wendy.asbil@canada.ca','karen.castro@canada.ca','jessica.dykstra@canada.ca','timothy.hazard@canada.ca','Rositsa.Dimitrova@canada.ca','andreanne.charron@canada.ca','alexandre.blain@canada.ca','laura.doubleday@inspection.gc.ca','ben.drugmand@canada.ca', 'baekyun.park@inspection.gc.ca', 'nicole.mielewczyk@inspection.gc.ca', 'martin.damus@inspection.gc.ca', 'tony.lee@inspection.gc.ca'  ]
+
+receiver_email = os.getenv("RECEIVER_EMAIL", "").split(",")
+
 ################################# load commentStatus and queryPairs
 try: 
     commentStatus = load_obj(commentStatusPath)

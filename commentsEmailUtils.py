@@ -4,16 +4,17 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
 import email.utils
+from dotenv import load_dotenv
+import os
 
-# COMMAND ----------
+load_dotenv
 
-#Api_key = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="testSecret")
-SENDER = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="SENDER")
+SENDER = os.getenv("SENDER")
 SENDERNAME = 'AI LAB CFIA'
-USERNAME_SMTP = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="USERNAMESMTP")
-PASSWORD_SMTP = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="PASSWORDSMTP")
-HOST = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="HOST")
-PORT = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="PORT")
+USERNAME_SMTP = os.getenv("USERNAME_SMTP")
+PASSWORD_SMTP = os.getenv("PASSWORD_SMTP")
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
 
 Title="multipart test"
 

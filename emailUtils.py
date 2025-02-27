@@ -4,9 +4,17 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
 import email.utils
+from dotenv import load_dotenv
+import os
 
-#emailUtilsKeyVaultScope
-# add secrets from Databricks Vault when deploying
+load_dotenv()
+
+SENDER = os.getenv("SENDER")
+SENDERNAME = 'AI LAB CFIA'
+USERNAME_SMTP = os.getenv("USERNAME_SMTP")
+PASSWORD_SMTP = os.getenv("PASSWORD_SMTP")
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
 
 Title="multipart test"
 

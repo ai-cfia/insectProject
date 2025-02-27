@@ -23,6 +23,9 @@
 
 # COMMAND ----------
 
+from dotenv import load_dotenv
+import os
+
 test=0
 
 receiver_email = ['']
@@ -33,13 +36,15 @@ MLcolumn="ai_visionVerification"
 datefrom=getYesterday()
 dateto=getYesterday()
 
+load_dotenv()
 
+receiver_email = os.getenv("RECEIVER_EMAIL", "").split(",")
 
 Title="Observations of Invasive Species Submitted On " + datefrom
 
 geobound=1
 projectID=91863
-sender_email='earlywarning.invasive@gmail.com'
+
 columns_in_out=["Quality", "Name1", "Name2", "Obsvn_URL","Sample_Img","coordinates","posted_on","observed_on","user_login","Obsvn_ID","upper taxa","upper_taxa_id"] #"comments"]
 upperTaxa= ['Insecta', 'Mollusca', 'Plantae', 'Fungi', 'Chromista']
 ordered=['Quality', 'Name1', 'Name2','City', 'Province', 'Obsvn_URL', 'Sample_Img', 'posted_on',
