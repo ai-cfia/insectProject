@@ -14,7 +14,7 @@ def getModels():
     nonInvasive1= {"name": "Monochamus scutellatus", 
                    "id": "82043"}
     
-    address_model1='/dbfs/FileStore/shared_uploads/geetika.sharma@inspection.gc.ca/densenet_model_beta_AsianLonghorn'
+    address_model1='' # TODO
     model1=getModel1(address_model1)
     m1 = {"invasive": ["Asian Long-horned Beetle","Citrus Longhorn Beetle"], # use common name because the way they are flagging these species specifically are by using the upper taxa so the scientific name would be that of the upper taxa and not of the invasive subspecies inside of it (i.e., not the ones we are targetting)
           #{ "invasive": ["Anoplophora glabripennis","Anoplophora chinensis"],

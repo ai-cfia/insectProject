@@ -24,8 +24,7 @@
 # COMMAND ----------
 
 test=0
-
-receiver_email = ['']
+receiver_email = [] # TODO
 ############################## to_change
 
 MLcolumn="ai_visionVerification"

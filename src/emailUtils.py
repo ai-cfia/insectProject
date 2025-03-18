@@ -6,7 +6,13 @@ import re
 import email.utils
 
 #emailUtilsKeyVaultScope
-# add secrets from Databricks Vault when deploying
+#Api_key = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="testSecret")
+SENDER = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="SENDER")
+SENDERNAME = 'AI LAB CFIA'
+USERNAME_SMTP = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="USERNAMESMTP")
+PASSWORD_SMTP = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="PASSWORDSMTP")
+HOST = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="HOST")
+PORT = dbutils.secrets.get(scope="databricksKeyVaultv1Scope", key="PORT")
 
 Title="multipart test"
 
@@ -31,43 +37,7 @@ def send_email(receiver_email,dfInsecta, dfPlantae, dfMollusca, dfFungi, dfChrom
           <head></head>
           <body>""" 
           
-    text_end = """    
-               <br>
-               <br>
-               <p>
-               <a href="https://github.com/ai-cfia/">Ai Lab</a> <br>
-               Innovation, Business, and Service Development Branch<br>
-               Canadian Food Inspection Agency / Government of Canada<br>
-               <a href = "mailto:cfia.ai-ia.acia@canada.ca?subject = EarlyWarning = Message">
-               cfia.ai-ia.acia@canada.ca
-               </a><br>
-        
-               laboratoire d’intelligence artificielle<br>
-               Direction générale du développement des affaires, des services et de l'innovation<br>
-               Agence canadienne d'inspection des aliments / Gouvernement du Canada<br>
-               <a href = "mailto:cfia.ai-ia.acia@canada.ca?subject = EarlyWarning = Message">
-               cfia.ai-ia.acia@canada.ca
-               </a><br>
-               <br>
-               
-               
-               <p><small>
-                   
-               You are receiving this email because you have expressed interest in including your email address in the "early warning" project mailing list.<br>
-               It is important to note that we are sending these emails from a Gmail address only as part of the pilot project. When the final version of this project will be deployed, you will receive these emails from the official Ai Lab address.
-               Want to change how you receive these emails? please send us an email at <a href = "mailto:cfia.ai-ia.acia@canada.ca?subject = EarlyWarning = Message">
-               cfia.ai-ia.acia@canada.ca</a></p>
-               <p>
-               Vous recevez ce courriel parce que vous avez exprimé votre intérêt pour inclure votre adresse courriel dans la liste d'envoi du projet "early warning".<br>
-               Il est important de noter que nous envoyons ces courriels à partir d'une adresse Gmail seulement dans le cadre du projet pilote. Lorsque la version finale de ce projet sera déployée, vous recevrez ces courriels à partir de l'adresse officielle du Ai Lab.
-               Si vous ne souhaitez plus recevoir ce message, veuillez nous envoyer un courriel à <a href = "mailto:cfia.ai-ia.acia@canada.ca?subject = EarlyWarning = Message">
-               cfia.ai-ia.acia@canada.ca</a> </p>
-               
-               </small></p>
-            </p>
-          </body>
-        </html>
-        """
+    text_end = "" # TODO
         
     
     count=0
