@@ -1,6 +1,5 @@
 # Databricks notebook source
 from geopy.geocoders import Nominatim
-#from geopy.geocoders import Photon
 
 def getLocation_perObservation(coord):
     locator = Nominatim(user_agent='inectsiNatApp',timeout=None)

@@ -3,7 +3,6 @@
 
 # COMMAND ----------
 
-!python -V
 
 # COMMAND ----------
 
