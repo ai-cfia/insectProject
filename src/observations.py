@@ -103,27 +103,29 @@ async def get_observations(
 ):
     await asyncio.sleep(settings.api_request_delay)
 
-    async with ApiClient(settings.configuration) as api_client:
+    async with ApiClient(settings.configuration()) as api_client:
         api_instance = ObservationsApi(api_client)
 
-        nelat, nelng, swlat, swlng = (None, None, None, None)
-        if region:
-            nelat, nelng, swlat, swlng = settings.areas.get(
-                region.value, (None, None, None, None)
-            )
+        match region:
+            case Region.CA:
+                area = settings.areas.CA
+            case Region.US:
+                area = settings.areas.US
+            case _:
+                area = None
 
         return await api_instance.observations_get(
             per_page=str(per_page),
             page=str(page),
-            created_d1=date_from,  # TODO: should it be create date or observe date?
+            created_d1=date_from,
             created_d2=date_to,
             created_on=date_on,
             taxon_name=taxon_names if taxon_names else None,
             taxon_id=[str(tid) for tid in taxon_ids] if taxon_ids else None,
-            nelat=nelat,
-            nelng=nelng,
-            swlat=swlat,
-            swlng=swlng,
+            nelat=area.nelat if area else None,
+            nelng=area.nelng if area else None,
+            swlat=area.swlat if area else None,
+            swlng=area.swlng if area else None,
         )
 
 

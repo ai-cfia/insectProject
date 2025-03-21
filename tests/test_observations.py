@@ -103,8 +103,6 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             results=[{"id": 12345, "created_at": datetime(2024, 2, 29, 17, 49, 36)}],
         )
 
-        nelat, nelng, swlat, swlng = self.settings.areas["CA"]
-
         await get_observations(
             settings=self.settings,
             taxon_ids=self.taxon_ids,
@@ -124,10 +122,10 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             created_on=None,
             taxon_id=None,
             taxon_name=self.taxon_names,
-            nelat=nelat,
-            nelng=nelng,
-            swlat=swlat,
-            swlng=swlng,
+            nelat=self.settings.areas.CA.nelat,
+            nelng=self.settings.areas.CA.nelng,
+            swlat=self.settings.areas.CA.swlat,
+            swlng=self.settings.areas.CA.swlng,
         )
 
     @patch(
@@ -190,8 +188,6 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(observations.total_results, 1)
         self.assertEqual(observations.results[0]["id"], 54321)
 
-        nelat, nelng, swlat, swlng = self.settings.areas["CA"]
-
         mock_observations_get.assert_called_with(
             page=str(self.page),
             per_page=str(self.per_page),
@@ -200,10 +196,10 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             created_on=datetime.strptime(self.date_on, "%Y-%m-%d").date(),
             taxon_id=None,
             taxon_name=self.taxon_names,
-            nelat=nelat,
-            nelng=nelng,
-            swlat=swlat,
-            swlng=swlng,
+            nelat=self.settings.areas.CA.nelat,
+            nelng=self.settings.areas.CA.nelng,
+            swlat=self.settings.areas.CA.swlat,
+            swlng=self.settings.areas.CA.swlng,
         )
 
     @patch(
@@ -236,10 +232,10 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             created_on=None,
             taxon_id=["123", "456", "789"],
             taxon_name=self.taxon_names,
-            nelat=self.settings.areas["CA"][0],
-            nelng=self.settings.areas["CA"][1],
-            swlat=self.settings.areas["CA"][2],
-            swlng=self.settings.areas["CA"][3],
+            nelat=self.settings.areas.CA.nelat,
+            nelng=self.settings.areas.CA.nelng,
+            swlat=self.settings.areas.CA.swlat,
+            swlng=self.settings.areas.CA.swlng,
         )
 
     @patch(
