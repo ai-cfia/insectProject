@@ -44,5 +44,7 @@ class Settings(BaseSettings):
         US=Area(nelat=49.386847, nelng=-50.954936, swlat=25.489156, swlng=-128.826023),
     )
 
+    project_id: str = "91863"
+
     def configuration(self) -> Configuration:
         return Configuration(host=self.inat_host, retries=5, debug=True)

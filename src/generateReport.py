@@ -5,11 +5,11 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./getListOfSpeciesUtils
+# MAGIC %run ./getListOfSpeciesUtils TODO next
 
 # COMMAND ----------
 
-# MAGIC %run ./modelsPrep next TODO
+# MAGIC %run ./modelsPrep
 
 # COMMAND ----------
 
