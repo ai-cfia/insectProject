@@ -6,7 +6,7 @@ import pandas as pd
 from src.preprocess import (
     extract_first_sample_image,
     filter_north_american_locations,
-    split_by_taxonomy,
+    group_by_taxa,
 )
 
 
@@ -128,11 +128,11 @@ class TestSplitByTaxonomy(unittest.TestCase):
         self.upper_taxa = ["Insecta", "Mollusca", "Plantae", "Fungi"]
 
     def test_correct_number_of_outputs(self):
-        results = split_by_taxonomy(self.df, self.upper_taxa)
+        results = group_by_taxa(self.df, self.upper_taxa)
         self.assertEqual(len(results), len(self.upper_taxa) + 1)
 
     def test_individual_taxa_dataframes(self):
-        insecta_df, mollusca_df, plantae_df, fungi_df, others_df = split_by_taxonomy(
+        insecta_df, mollusca_df, plantae_df, fungi_df, others_df = group_by_taxa(
             self.df, self.upper_taxa
         )
 
@@ -163,7 +163,7 @@ class TestSplitByTaxonomy(unittest.TestCase):
         pd.testing.assert_frame_equal(fungi_df, expected_fungi)
 
     def test_others_dataframe(self):
-        _, _, _, _, others_df = split_by_taxonomy(self.df, self.upper_taxa)
+        _, _, _, _, others_df = group_by_taxa(self.df, self.upper_taxa)
 
         expected_others = (
             self.df[~self.df["upper taxa"].isin(self.upper_taxa)]
@@ -178,7 +178,7 @@ class TestSplitByTaxonomy(unittest.TestCase):
 
     def test_empty_dataframe(self):
         empty_df = pd.DataFrame(columns=["Species", "upper taxa", "Value"])
-        results = split_by_taxonomy(empty_df, self.upper_taxa)
+        results = group_by_taxa(empty_df, self.upper_taxa)
 
         for df in results:
             self.assertTrue(df is None or df.empty)
@@ -186,4 +186,4 @@ class TestSplitByTaxonomy(unittest.TestCase):
     def test_missing_taxa_column(self):
         df_no_taxa = self.df.drop(columns=["upper taxa"])
         with self.assertRaises(KeyError):
-            split_by_taxonomy(df_no_taxa, self.upper_taxa)
+            group_by_taxa(df_no_taxa, self.upper_taxa)

@@ -9,6 +9,7 @@ scipy
 geopy
 requests
 git+https://github.com/ai-cfia/inaturalist-client.git@main
-pydantic
+pydantic[email]
 pydantic-settings
 python-dotenv
+Jinja2

@@ -1,30 +1,8 @@
-
-# COMMAND ----------
-
-# MAGIC %run ./preprocessUtils
-
-# COMMAND ----------
-
-# MAGIC %run ./getListOfSpeciesUtils TODO next
-
-# COMMAND ----------
-
-# MAGIC %run ./modelsPrep
-
-# COMMAND ----------
-
-# MAGIC %run ./apiUtils
-
-# COMMAND ----------
-
-# MAGIC %run ./emailUtils
-
-# COMMAND ----------
 import pandas as pd
 
-from src.apiUtils import getObsv_allPages
+from archive.apiUtils import getObsv_allPages
 from src.dates import get_yesterday
-from src.emailUtils import send_email
+from archive.emailUtils import send_email
 from src.getListOfSpeciesUtils import getListOfIDs
 from src.modelsPrep import getModels, predict
 from src.preprocessUtils import (

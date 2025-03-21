@@ -103,7 +103,7 @@ async def get_observations(
 ):
     await asyncio.sleep(settings.api_request_delay)
 
-    async with ApiClient(settings.configuration()) as api_client:
+    async with ApiClient(settings.inat_client_config) as api_client:
         api_instance = ObservationsApi(api_client)
 
         match region:

@@ -8,7 +8,7 @@ from src.settings import Settings
 
 @validate_call
 async def get_specie_ids(settings: Settings):
-    async with ApiClient(settings.configuration()) as api_client:
+    async with ApiClient(settings.inat_client_config) as api_client:
         results = (
             await ProjectsApi(api_client).projects_id_get(
                 [settings.project_id], rule_details="true"

@@ -12,6 +12,12 @@ class TestSettings(unittest.TestCase):
         os.environ["AREAS"] = (
             '{"CA":{"nelat":83.1,"nelng":-50.75,"swlat":41.2833333,"swlng":-140.8833333},"US":{"nelat":49.386847,"nelng":-50.954936,"swlat":25.489156,"swlng":-128.826023}}'
         )
+        os.environ["SMTP_HOST"] = ""
+        os.environ["SMTP_PORT"] = "587"
+        os.environ["SMTP_USERNAME"] = ""
+        os.environ["SMTP_PASSWORD"] = ""
+        os.environ["SENDER_EMAIL"] = "a@example.com"
+        os.environ["RECIPIENT_EMAILS"] = '["b@example.com", "c@example.com"]'
         self.settings = Settings()
 
     def test_species_data(self):
@@ -22,7 +28,9 @@ class TestSettings(unittest.TestCase):
             ],
             non_invasive=[Species(name="Monochamus scutellatus", id="123456")],
         )
-        self.assertEqual(self.settings.species_data, expected, self.settings.species_data)
+        self.assertEqual(
+            self.settings.species_data, expected, self.settings.species_data
+        )
 
     def test_areas_data(self):
         expected = AreaData(
@@ -55,3 +63,7 @@ class TestSettings(unittest.TestCase):
             ),
         )
         self.assertEqual(settings.areas, expected)
+
+    def test_recipient_emails_parsing(self):
+        settings = Settings()
+        self.assertEqual(settings.recipient_emails, ["b@example.com", "c@example.com"])

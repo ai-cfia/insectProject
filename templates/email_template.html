@@ -1,0 +1,57 @@
+<html>
+  <head></head>
+  <body>
+    {% for title, table in tables %}
+    <p style="font-family: verdana">
+      <br />
+      <b>{{ title }}</b><br />
+      {{ table | safe }}
+    </p>
+
+    <p>&nbsp;</p>
+    {% endfor %}{% if not tables %}
+    <p>There was no invasive species found</p>
+    {% endif %}
+
+    <br /><br />
+    <p>
+      <a href="https://github.com/ai-cfia/">AI Lab</a> <br />
+      Innovation, Business, and Service Development Branch<br />
+      Canadian Food Inspection Agency / Government of Canada<br />
+      <a href="mailto:cfia.ai-ia.acia@canada.ca?subject=EarlyWarning%20Message">
+        cfia.ai-ia.acia@canada.ca</a
+      ><br />
+
+      Laboratoire d'intelligence artificielle<br />
+      Direction générale du développement des affaires, des services et de
+      l'innovation<br />
+      Agence canadienne d'inspection des aliments / Gouvernement du Canada<br />
+      <a href="mailto:cfia.ai-ia.acia@canada.ca?subject=EarlyWarning%20Message">
+        cfia.ai-ia.acia@canada.ca</a
+      ><br /><br />
+
+      <small>
+        You are receiving this email because you requested to be added to the
+        "early warning" project mailing list.<br />
+        Want to change how you receive these emails? Please send us an email at
+        <a
+          href="mailto:cfia.ai-ia.acia@canada.ca?subject=EarlyWarning%20Message"
+          >cfia.ai-ia.acia@canada.ca</a
+        >
+      </small>
+
+      <br /><br />
+
+      <small>
+        Vous recevez ce courriel parce que vous avez demandé à être ajouté à la
+        liste d'envoi du projet "early warning".<br />
+        Si vous ne souhaitez plus recevoir ce message, veuillez nous envoyer un
+        courriel à
+        <a
+          href="mailto:cfia.ai-ia.acia@canada.ca?subject=EarlyWarning%20Message"
+          >cfia.ai-ia.acia@canada.ca</a
+        >
+      </small>
+    </p>
+  </body>
+</html>

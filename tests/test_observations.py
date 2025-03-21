@@ -13,12 +13,13 @@ from src.observations import (
     get_observations,
     transform_summaries_to_dataframe,
 )
-from src.settings import Settings
+from tests import settings
 
 
 class TestGetObservations(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.settings = Settings(api_request_delay=0.0)
+        self.settings = settings
+        self.settings.api_request_delay = 0.0
         self.taxon_ids = None
         self.taxon_names = ["Panthera leo"]
         self.date_from = "2024-01-01"
@@ -359,7 +360,8 @@ class TestObservationSummary(unittest.TestCase):
 
 class TestGetAllObservations(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.settings = Settings(api_request_delay=0.0)
+        self.settings = settings
+        self.settings.api_request_delay = 0.0
         self.taxon_ids = [47115]
         self.per_page = 2
         self.page = 1

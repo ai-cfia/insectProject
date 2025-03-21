@@ -36,7 +36,7 @@ def extract_first_sample_image(df: pd.DataFrame):
     return df
 
 
-def split_by_taxonomy(df_regulated: pd.DataFrame, upper_taxa: list[str]):
+def group_by_taxa(df_regulated: pd.DataFrame, upper_taxa: list[str]):
     col = "upper taxa"
     taxa_dfs = {
         taxon: df_regulated[df_regulated[col] == taxon]
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     upper_taxa_list = ["Insecta", "Mollusca", "Plantae", "Fungi"]
 
     # Test split_by_taxonomy
-    insecta_df, mollusca_df, plantae_df, fungi_df, others_df = split_by_taxonomy(
+    insecta_df, mollusca_df, plantae_df, fungi_df, others_df = group_by_taxa(
         df_taxa, upper_taxa_list
     )
 
