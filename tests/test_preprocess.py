@@ -1,16 +1,25 @@
+import copy
 import unittest
 from unittest.mock import patch
 
 import pandas as pd
 
 from src.preprocess import (
-    extract_first_sample_image,
-    filter_north_american_locations,
+    filter_ca_us_locations,
     group_by_taxa,
+    keep_only_first_sample_image,
 )
+from src.observation_reports import exclude_non_invasive
+from tests import settings
 
 
 class TestFilterNorthAmericanLocations(unittest.TestCase):
+    def setUp(self):
+        self.settings = settings.model_copy()
+        self.settings.coords_column = "coordinates"
+        self.settings.city_column = "City"
+        self.settings.province_column = "Province"
+
     @patch("src.preprocess.get_city_province_country")
     def test_filter_north_american_locations(self, mock_get_city_province_country):
         mock_get_city_province_country.side_effect = [
@@ -28,7 +37,7 @@ class TestFilterNorthAmericanLocations(unittest.TestCase):
         }
 
         df = pd.DataFrame(test_data)
-        filtered_df = filter_north_american_locations(df)
+        filtered_df = filter_ca_us_locations(self.settings, df)
 
         expected_data = {
             "City": ["Ottawa", "New York"],
@@ -55,19 +64,21 @@ class TestFilterNorthAmericanLocations(unittest.TestCase):
         }
 
         df = pd.DataFrame(test_data)
-        filtered_df = filter_north_american_locations(df)
+        filtered_df = filter_ca_us_locations(self.settings, df)
 
         self.assertTrue(filtered_df.empty)
 
     @patch("src.preprocess.get_city_province_country")
     def test_filter_empty_dataframe(self, mock_get_city_province_country):
         df = pd.DataFrame({"coordinates": []})
-        filtered_df = filter_north_american_locations(df)
+        filtered_df = filter_ca_us_locations(self.settings, df)
         self.assertTrue(filtered_df.empty)
 
 
 class TestExtractFirstSampleImage(unittest.TestCase):
     def setUp(self):
+        self.settings = settings.model_copy()
+        self.settings.image_column = "Sample_Img"
         self.test_data = pd.DataFrame(
             {
                 "Sample_Img": [
@@ -93,18 +104,23 @@ class TestExtractFirstSampleImage(unittest.TestCase):
             }
         )
 
-        result = extract_first_sample_image(self.test_data.copy())
+        result = keep_only_first_sample_image(self.settings, self.test_data.copy())
 
         pd.testing.assert_frame_equal(result, expected_output)
 
     def test_missing_sample_img_column(self):
         df = pd.DataFrame({"Other_Column": [1, 2, 3]})
-        result = extract_first_sample_image(df.copy())
+        self.settings.image_column = "Sample_Img"
+        result = keep_only_first_sample_image(self.settings, df.copy())
         pd.testing.assert_frame_equal(result, df)
 
 
 class TestSplitByTaxonomy(unittest.TestCase):
     def setUp(self):
+        self.settings = settings.model_copy()
+        self.settings.upper_taxa_column = "upper taxa"
+        self.settings.upper_taxa = ["Insecta", "Mollusca", "Plantae", "Fungi"]
+
         self.test_data = {
             "Species": [
                 "Species1",
@@ -125,49 +141,34 @@ class TestSplitByTaxonomy(unittest.TestCase):
             "Value": [10, 20, 30, 40, 50, 60],
         }
         self.df = pd.DataFrame(self.test_data)
-        self.upper_taxa = ["Insecta", "Mollusca", "Plantae", "Fungi"]
 
     def test_correct_number_of_outputs(self):
-        results = group_by_taxa(self.df, self.upper_taxa)
-        self.assertEqual(len(results), len(self.upper_taxa) + 1)
+        results = group_by_taxa(self.settings, self.df)
+        self.assertEqual(len(results), len(self.settings.upper_taxa) + 1)
 
     def test_individual_taxa_dataframes(self):
         insecta_df, mollusca_df, plantae_df, fungi_df, others_df = group_by_taxa(
-            self.df, self.upper_taxa
+            self.settings, self.df
         )
 
-        expected_insecta = (
-            self.df[self.df["upper taxa"] == "Insecta"]
-            .drop(columns=["upper taxa"])
-            .reset_index(drop=True)
-        )
-        expected_mollusca = (
-            self.df[self.df["upper taxa"] == "Mollusca"]
-            .drop(columns=["upper taxa"])
-            .reset_index(drop=True)
-        )
-        expected_plantae = (
-            self.df[self.df["upper taxa"] == "Plantae"]
-            .drop(columns=["upper taxa"])
-            .reset_index(drop=True)
-        )
-        expected_fungi = (
-            self.df[self.df["upper taxa"] == "Fungi"]
-            .drop(columns=["upper taxa"])
-            .reset_index(drop=True)
-        )
-
-        pd.testing.assert_frame_equal(insecta_df, expected_insecta)
-        pd.testing.assert_frame_equal(mollusca_df, expected_mollusca)
-        pd.testing.assert_frame_equal(plantae_df, expected_plantae)
-        pd.testing.assert_frame_equal(fungi_df, expected_fungi)
+        for taxon, df_out in zip(
+            self.settings.upper_taxa, [insecta_df, mollusca_df, plantae_df, fungi_df]
+        ):
+            expected = (
+                self.df[self.df[self.settings.upper_taxa_column] == taxon]
+                .drop(columns=[self.settings.upper_taxa_column])
+                .reset_index(drop=True)
+            )
+            pd.testing.assert_frame_equal(df_out, expected)
 
     def test_others_dataframe(self):
-        _, _, _, _, others_df = group_by_taxa(self.df, self.upper_taxa)
+        *_, others_df = group_by_taxa(self.settings, self.df)
 
         expected_others = (
-            self.df[~self.df["upper taxa"].isin(self.upper_taxa)]
-            .drop(columns=["upper taxa"])
+            self.df[
+                ~self.df[self.settings.upper_taxa_column].isin(self.settings.upper_taxa)
+            ]
+            .drop(columns=[self.settings.upper_taxa_column])
             .reset_index(drop=True)
         )
 
@@ -178,12 +179,44 @@ class TestSplitByTaxonomy(unittest.TestCase):
 
     def test_empty_dataframe(self):
         empty_df = pd.DataFrame(columns=["Species", "upper taxa", "Value"])
-        results = group_by_taxa(empty_df, self.upper_taxa)
-
+        results = group_by_taxa(self.settings, empty_df)
         for df in results:
             self.assertTrue(df is None or df.empty)
 
     def test_missing_taxa_column(self):
         df_no_taxa = self.df.drop(columns=["upper taxa"])
         with self.assertRaises(KeyError):
-            group_by_taxa(df_no_taxa, self.upper_taxa)
+            group_by_taxa(self.settings, df_no_taxa)
+
+
+class TestExcludeNonInvasive(unittest.TestCase):
+    def setUp(self):
+        self.s = copy.deepcopy(settings.model_copy())
+        self.s.name_alt_column = "Scientific Name"
+        self.df = pd.DataFrame(
+            {
+                "Scientific Name": [
+                    "Species A",
+                    "Monochamus scutellatus",
+                    "Species C",
+                    "Species D",
+                ]
+            }
+        )
+
+    def test_exclude_matching_species(self):
+        result = exclude_non_invasive(self.s, self.df)
+        self.assertEqual(len(result), 3)
+        self.assertNotIn(
+            "Monochamus scutellatus", result[self.s.name_alt_column].values
+        )
+
+    def test_exclude_no_match(self):
+        self.s.species_data.non_invasive = [self.s.species_data.invasive[0]]
+        result = exclude_non_invasive(self.s, self.df)
+        self.assertEqual(len(result), 4)
+
+    def test_exclude_empty_list(self):
+        self.s.species_data.non_invasive = []
+        result = exclude_non_invasive(self.s, self.df)
+        self.assertEqual(len(result), 4)

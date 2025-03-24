@@ -1,8 +1,11 @@
 from geopy.geocoders import Nominatim
 from pydantic import validate_call
 
+from src.custom_logging import log_call
+
 
 # TODO: would google maps be better?
+@log_call
 @validate_call
 def get_city_province_country(coord: tuple[float, float]):
     # TODO: add a timeout
@@ -11,13 +14,12 @@ def get_city_province_country(coord: tuple[float, float]):
         location = locator.reverse(coord, language="en")
         address = location.raw["address"] if location and location.raw else {}
         city = (
-            address.get("city")
-            or address.get("town")
-            or address.get("village")
-            or address.get("municipality")
-            or address.get("county")
-            or address.get("state_district")
-            or ""
+            address.get("city", "")
+            or address.get("town", "")
+            or address.get("village", "")
+            or address.get("municipality", "")
+            or address.get("county", "")
+            or address.get("state_district", "")
         )
         province, country = address.get("state", ""), address.get("country_code", "")
         return city, province, country

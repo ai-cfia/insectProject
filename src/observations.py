@@ -1,94 +1,20 @@
 import asyncio
+import logging
 from datetime import date, datetime
-from enum import Enum
-from typing import Annotated
 
 import pandas as pd
 from inaturalist_client import ApiClient, Observation, ObservationsApi
-from pydantic import (
-    AliasChoices,
-    AliasPath,
-    BaseModel,
-    Field,
-    field_validator,
-    validate_call,
-)
+from pydantic import validate_call
 
+from src.custom_logging import log_call
 from src.dates import get_yesterday
+from src.pydantic_models import ObservationSummary, Region
 from src.settings import Settings
 
-
-class Region(Enum):
-    CA = "CA"
-    US = "US"
+log = logging.getLogger(__name__)
 
 
-class ObservationSummary(BaseModel):
-    id: int
-    quality_grade: str
-    name: str | None = Field(
-        "",
-        validation_alias=AliasChoices(
-            "name", AliasPath("taxon", "preferred_common_name")
-        ),
-    )
-    name_alt: str | None = Field(
-        "", validation_alias=AliasChoices("name_alt", AliasPath("taxon", "name"))
-    )
-    uri: str | None = ""
-    image_urls: list[str] = Field(
-        default_factory=list,
-        validation_alias=AliasChoices("image_urls", AliasPath("photos")),
-    )
-
-    coordinates: list[float] | None = Field(
-        default_factory=list,
-        validation_alias=AliasChoices(
-            "coordinates", AliasPath("geojson", "coordinates")
-        ),
-    )
-    created_at: datetime | None = Field(
-        None,
-        validation_alias=AliasChoices(
-            "created_at", AliasPath("created_at_details", "var_date")
-        ),
-    )
-    observed_at: datetime | None = Field(
-        None, validation_alias=AliasChoices("observed_at", AliasPath("observed_on"))
-    )
-    username: str | None = Field(
-        "", validation_alias=AliasChoices("username", AliasPath("user", "login"))
-    )
-    taxon_name: str | None = Field(
-        "",
-        validation_alias=AliasChoices(
-            "taxon_name", AliasPath("taxon", "iconic_taxon_name")
-        ),
-    )
-    taxon_id: int | None = Field(
-        None,
-        validation_alias=AliasChoices(
-            "taxon_id", AliasPath("taxon", "iconic_taxon_id")
-        ),
-    )
-
-    @field_validator("image_urls", mode="before")
-    @classmethod
-    def extract_image_urls(cls, value):
-        if isinstance(value, list):
-            return [
-                v["url"].replace("square", "large")
-                if isinstance(v, dict) and "url" in v
-                else v.replace("square", "large")  # TODO: right way to handle this?
-                if isinstance(v, str)
-                else v
-                for v in value
-            ]
-        return []
-
-
-# TODO: Annotate
-# TODO: url safe query target
+@log_call
 @validate_call
 async def get_observations(
     settings: Settings,
@@ -129,6 +55,7 @@ async def get_observations(
         )
 
 
+@log_call
 @validate_call
 async def get_all_observations(
     settings: Settings,
@@ -144,8 +71,6 @@ async def get_all_observations(
     page = 1
     fetched_count = 0
 
-    print("Starting observation retrieval...")
-
     while True:
         observations = await get_observations(
             settings=settings,
@@ -160,16 +85,15 @@ async def get_all_observations(
         )
 
         if not observations.results:
-            print("No more observations to fetch. Exiting.")
+            log.debug("No more observations to fetch.")
             break
 
         all_observations.extend(observations.results)
         fetched_count += len(observations.results)
-
-        print(f"Fetched {fetched_count} observations...")
+        log.debug(f"Fetched {fetched_count} observations so far.")
 
         if len(observations.results) < per_page:
-            print("All observations retrieved successfully.")
+            log.debug("All observations retrieved.")
             break
 
         page += 1
@@ -177,58 +101,63 @@ async def get_all_observations(
     return all_observations
 
 
+@log_call
 @validate_call
-def transform_summaries_to_dataframe(
-    summaries: Annotated[list[ObservationSummary], Field(..., min_length=1)],
-    columns: list[str],
+def transform_summaries_to_df(
+    summaries: list[ObservationSummary], column_mapping: dict[str, str]
 ) -> pd.DataFrame:
-    data = [summary.model_dump() for summary in summaries]
-    df = pd.DataFrame(data)
-    column_mapping = dict(zip(df.columns, columns))
+    if len(set(column_mapping.values())) != len(column_mapping.values()):
+        raise ValueError("Duplicate output column names in mapping")
+
+    model_keys = ObservationSummary(id=0).model_dump().keys()
+    invalid_keys = set(column_mapping.keys()) - set(model_keys)
+    if invalid_keys:
+        raise KeyError(f"Invalid column mapping keys: {invalid_keys}")
+
+    df = pd.DataFrame(columns=model_keys)
+
+    if summaries:
+        data = [summary.model_dump() for summary in summaries]
+        df = pd.DataFrame(data)
+
     return df.rename(columns=column_mapping)
 
 
+@log_call
+@validate_call
+async def get_yesterdays_observation_summaries_df(
+    settings: Settings, taxon_ids: list[int], region: Region | None = Region.CA
+):
+    observations = await get_all_observations(
+        settings=settings,
+        taxon_ids=taxon_ids,
+        date_on=get_yesterday(),
+        region=region,
+    )
+    summaries = [
+        ObservationSummary.model_validate(o.model_dump()) for o in observations
+    ]
+    return transform_summaries_to_df(summaries, settings.df_column_map_default)
+
+
 if __name__ == "__main__":
+    # run with `python -m src.observations`
     from dotenv import load_dotenv
 
     load_dotenv()
     settings = Settings()
 
     async def main():
-        taxon_ids = [47115]
-        date_on = get_yesterday()
-        region = "CA"
+        # taxon_ids = [47115]
+        taxon_ids = [128525]
+        region = None
 
-        print("Fetching all observations...")
-        all_observations = await get_all_observations(
+        df = await get_yesterdays_observation_summaries_df(
             settings=settings,
             taxon_ids=taxon_ids,
-            date_on=date_on,
             region=region,
         )
 
-        print(f"Total observations retrieved: {len(all_observations)}")
-
-        observation_summaries = [
-            ObservationSummary.model_validate(obs.model_dump())
-            for obs in all_observations
-        ]
-
-        columns = [
-            "Obsvn_ID",
-            "Quality",
-            "Name1",
-            "Name2",
-            "Obsvn_URL",
-            "Sample_Img",
-            "coordinates",
-            "posted_on",
-            "observed_on",
-            "user_login",
-            "upper taxa",
-            "upper_taxa_id",
-        ]
-        df = transform_summaries_to_dataframe(observation_summaries, columns)
         print(df)
 
     asyncio.run(main())

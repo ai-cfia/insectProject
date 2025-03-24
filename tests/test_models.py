@@ -5,10 +5,12 @@ import torch
 from torchvision.models import DenseNet
 
 from src.models import PredictionLabel, predict_invasiveness
+from tests import settings
 
 
 class TestPredictInvasiveness(unittest.TestCase):
     def setUp(self):
+        self.s = settings.model_copy()
         self.mock_model = MagicMock(spec=DenseNet)
         self.mock_model.forward.return_value = torch.tensor(
             [[0.2, 0.8]]
@@ -34,7 +36,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         mock_download.return_value.__enter__.return_value = "dummy_path"
         with patch("builtins.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
-                self.image_sets[:2], self.mock_model, self.default_prediction
+                self.s, self.image_sets[:2], self.mock_model, self.default_prediction
             )
         self.assertEqual(len(preds), 2)
         self.assertIn(
@@ -44,7 +46,7 @@ class TestPredictInvasiveness(unittest.TestCase):
 
     def test_copyrighted_image(self):
         preds = predict_invasiveness(
-            [self.image_sets[2]], self.mock_model, self.default_prediction
+            self.s, [self.image_sets[2]], self.mock_model, self.default_prediction
         )
         self.assertEqual(preds, [PredictionLabel.REMOVED_COPYRIGHT.value])
 
@@ -59,7 +61,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         mock_download.return_value.__enter__.return_value = "dummy_path"
         with patch("builtins.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
-                [self.image_sets[3]], self.mock_model, self.default_prediction
+                self.s, [self.image_sets[3]], self.mock_model, self.default_prediction
             )
         self.assertEqual(preds, [PredictionLabel.INVASIVE.value])
 
@@ -74,7 +76,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         mock_download.return_value.__enter__.return_value = "dummy_path"
         with patch("builtins.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
-                [self.image_sets[1]], self.mock_model, self.default_prediction
+                self.s, [self.image_sets[1]], self.mock_model, self.default_prediction
             )
         self.assertEqual(preds, [PredictionLabel.INVASIVE.value])  # Breaks on INVASIVE
 
@@ -86,7 +88,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         mock_download.return_value.__enter__.return_value = "dummy_path"
         with patch("builtins.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
-                [self.image_sets[0]], self.mock_model, self.default_prediction
+                self.s, [self.image_sets[0]], self.mock_model, self.default_prediction
             )
         self.assertEqual(preds, [self.default_prediction.value])
 
@@ -101,7 +103,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         mock_download.return_value.__enter__.return_value = "dummy_path"
         with patch("builtins.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
-                [self.image_sets[1]], self.mock_model, self.default_prediction
+                self.s, [self.image_sets[1]], self.mock_model, self.default_prediction
             )
         self.assertEqual(preds, [PredictionLabel.NON_INVASIVE.value])
 
@@ -112,6 +114,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         mock_download.return_value.__enter__.return_value = "dummy_path"
         with patch("builtins.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
+                self.s,
                 [self.image_sets[2], self.image_sets[0]],
                 self.mock_model,
                 self.default_prediction,

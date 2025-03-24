@@ -3,16 +3,15 @@ from datetime import date, datetime
 from unittest.mock import AsyncMock, patch
 
 import pandas as pd
+from inaturalist_client import Observation
 from pydantic import ValidationError
 
 from src.observations import (
-    Observation,
-    ObservationSummary,
-    Region,
     get_all_observations,
     get_observations,
-    transform_summaries_to_dataframe,
+    transform_summaries_to_df,
 )
+from src.pydantic_models import ObservationSummary, Region
 from tests import settings
 
 
@@ -291,7 +290,7 @@ class TestObservationSummary(unittest.TestCase):
                 "preferred_common_name": "Lion",
                 "name": "Panthera leo",
                 "iconic_taxon_name": "Mammalia",
-                "iconic_taxon_id": 40151,
+                "id": 40151,
             },
             "photos": [
                 {"url": "https://static.inaturalist.org/photos/354262857/square.jpg"}
@@ -360,7 +359,7 @@ class TestObservationSummary(unittest.TestCase):
 
 class TestGetAllObservations(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.settings = settings
+        self.settings = settings.model_copy()
         self.settings.api_request_delay = 0.0
         self.taxon_ids = [47115]
         self.per_page = 2
@@ -465,38 +464,72 @@ class TestTransformSummariesToDataFrame(unittest.TestCase):
                 taxon_id=40152,
             ),
         ]
-        self.columns = [
-            "Obsvn_ID",
-            "Quality",
-            "Name1",
-            "Name2",
-            "Obsvn_URL",
-            "Sample_Img",
-            "coordinates",
-            "posted_on",
-            "observed_on",
-            "user_login",
-            "upper taxa",
-            "upper_taxa_id",
-        ]
+        self.column_mapping = settings.model_copy().df_column_map_default
+        self.columns = list(self.column_mapping.values())
 
     def test_transform_valid_input(self):
-        df = transform_summaries_to_dataframe(self.sample_summaries, self.columns)
+        df = transform_summaries_to_df(self.sample_summaries, self.column_mapping)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(len(df), 2)
-        self.assertEqual(len(df.columns), len(self.columns))
-
-    def test_column_mapping(self):
-        df = transform_summaries_to_dataframe(self.sample_summaries, self.columns)
         self.assertListEqual(list(df.columns), self.columns)
 
     def test_missing_fields(self):
         partial_summaries = [ObservationSummary(id=3, quality_grade="research")]
-        df = transform_summaries_to_dataframe(partial_summaries, self.columns)
+        df = transform_summaries_to_df(partial_summaries, self.column_mapping)
         self.assertEqual(len(df), 1)
         self.assertTrue(all(col in df.columns for col in self.columns))
 
     def test_output_format_consistency(self):
-        df1 = transform_summaries_to_dataframe(self.sample_summaries, self.columns)
-        df2 = transform_summaries_to_dataframe(self.sample_summaries, self.columns)
+        df1 = transform_summaries_to_df(self.sample_summaries, self.column_mapping)
+        df2 = transform_summaries_to_df(self.sample_summaries, self.column_mapping)
         pd.testing.assert_frame_equal(df1, df2)
+
+    def test_empty_summaries(self):
+        df = transform_summaries_to_df([], self.column_mapping)
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(len(df), 0)
+        self.assertListEqual(list(df.columns), self.columns)
+
+    def test_missing_optional_fields(self):
+        summary = ObservationSummary(id=4, quality_grade="research")
+        df = transform_summaries_to_df([summary], self.column_mapping)
+        self.assertEqual(len(df), 1)
+        self.assertEqual(df.at[0, "Common Name"], "")
+        self.assertEqual(df.at[0, "Coordinates"], [])
+        self.assertEqual(df.at[0, "Image URLs"], [])
+
+    def test_none_values(self):
+        summary = ObservationSummary(
+            id=5, quality_grade="research", name=None, coordinates=None, image_urls=None
+        )
+        df = transform_summaries_to_df([summary], self.column_mapping)
+        self.assertIsNone(df.at[0, "Common Name"])
+        self.assertIsNone(df.at[0, "Coordinates"])
+        self.assertListEqual(df.at[0, "Image URLs"], [])
+
+    def test_partial_column_mapping(self):
+        partial_mapping = {
+            "id": "Observation ID",
+            "name": "Common Name",
+        }
+        df = transform_summaries_to_df(self.sample_summaries, partial_mapping)
+        self.assertIn("Observation ID", df.columns)
+        self.assertIn("Common Name", df.columns)
+        self.assertIn("quality_grade", df.columns)
+        self.assertIn("uri", df.columns)
+
+    def test_invalid_column_mapping_keys(self):
+        invalid_mapping = {
+            "id": "Observation ID",
+            "nonexistent_field": "Should Not Exist",
+        }
+        with self.assertRaises(KeyError):
+            transform_summaries_to_df([], invalid_mapping)
+
+    def test_duplicate_output_column_names_raises(self):
+        duplicate_mapping = {
+            "id": "Duplicate",
+            "name": "Duplicate",
+        }
+        with self.assertRaises(ValueError):
+            transform_summaries_to_df(self.sample_summaries, duplicate_mapping)

@@ -1,5 +1,4 @@
 import unittest
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -7,20 +6,23 @@ from jinja2 import DictLoader, Environment
 
 from src.emails import (
     build_email_tables,
+    make_email_title,
     render_html,
     sanitize_html_links,
     send_email,
     send_smtp_email,
 )
 from src.settings import Settings
+from tests import settings
 
 
 class TestBuildEmailTables(unittest.TestCase):
     def setUp(self):
-        self.settings = SimpleNamespace(
-            upper_taxa=["Insecta", "Plantae"], other_taxa_label="Other"
-        )
-        self.columns = ["upper taxa", "name", "link"]
+        self.settings = settings.model_copy()
+        self.settings.upper_taxa_column = "upper taxa"
+        self.settings.upper_taxa = ["Insecta", "Plantae"]
+        self.settings.other_taxa_label = "Other"
+        self.columns = ["upper taxa", "Common Name", "Observation URL"]
 
     def test_all_empty(self):
         df = pd.DataFrame(columns=self.columns)
@@ -31,8 +33,8 @@ class TestBuildEmailTables(unittest.TestCase):
         df = pd.DataFrame(
             {
                 "upper taxa": ["Insecta"],
-                "name": ["A"],
-                "link": ["http://a.com"],
+                "Common Name": ["A"],
+                "Observation URL": ["http://a.com"],
             }
         )
         tables = build_email_tables(
@@ -46,8 +48,8 @@ class TestBuildEmailTables(unittest.TestCase):
         df = pd.DataFrame(
             {
                 "upper taxa": ["Plantae"],
-                "name": ["B"],
-                "link": ["http://b.com"],
+                "Common Name": ["B"],
+                "Observation URL": ["http://b.com"],
             }
         )
         tables = build_email_tables(
@@ -61,8 +63,8 @@ class TestBuildEmailTables(unittest.TestCase):
         df = pd.DataFrame(
             {
                 "upper taxa": ["Fungi"],
-                "name": ["X"],
-                "link": ["http://x.com"],
+                "Common Name": ["X"],
+                "Observation URL": ["http://x.com"],
             }
         )
         tables = build_email_tables(self.settings, df, df)
@@ -74,8 +76,8 @@ class TestBuildEmailTables(unittest.TestCase):
         df = pd.DataFrame(
             {
                 "upper taxa": ["Insecta", "Plantae", "Fungi"],
-                "name": ["A", "B", "C"],
-                "link": ["http://a.com", "http://b.com", "http://c.com"],
+                "Common Name": ["A", "B", "C"],
+                "Observation URL": ["http://a.com", "http://b.com", "http://c.com"],
             }
         )
         tables = build_email_tables(self.settings, df, df)
@@ -155,7 +157,7 @@ class TestSendSMTPEmail(unittest.TestCase):
 
         send_smtp_email(settings, html, subject)
 
-        mock_smtp.assert_called_with("smtp.example.com", 587, timeout=10)
+        mock_smtp.assert_called_with("smtp.example.com", 587)
         mock_server.starttls.assert_called_once()
         mock_server.login.assert_called_once_with("user", "pass")
         mock_server.sendmail.assert_called_once()
@@ -164,23 +166,39 @@ class TestSendSMTPEmail(unittest.TestCase):
 class TestSendEmail(unittest.TestCase):
     @patch("src.emails.send_smtp_email")
     def test_send_email_success(self, mock_send_smtp):
-        settings = Settings(
-            smtp_host="smtp.example.com",
-            smtp_port=587,
-            smtp_username="user",
-            smtp_password="pass",
-            sender_name="Sender",
-            sender_email="sender@example.com",
-            recipient_emails=["to@example.com"],
-        )
+        s = settings.model_copy()
+        s.recipient_emails = ["to@example.com"]
+        s.upper_taxa_column = "upper taxa"
+        s.upper_taxa = ["Insecta", "Plantae"]
+        s.other_taxa_label = "Other"
 
         data = {
             "upper taxa": ["Insecta", "Plantae", "Other"],
-            "name": ["A", "B", "C"],
-            "link": ["http://a", "http://b", "http://c"],
+            "Common Name": ["A", "B", "C"],
+            "Observation URL": ["http://a", "http://b", "http://c"],
         }
         df = pd.DataFrame(data)
 
-        send_email(settings, df, df, subject="Test Report")
+        send_email(s, df, df, subject="Test Report")
 
         mock_send_smtp.assert_called_once()
+
+
+class TestMakeEmailTitle(unittest.TestCase):
+    def setUp(self):
+        self.settings = settings
+
+    @patch("src.emails.get_yesterday", return_value="2025-03-20")
+    def test_normal_title(self, mock_get_yesterday):
+        expected = "Observations of Invasive Species Submitted on 2025-03-20"
+        result = make_email_title(self.settings, error=False)
+        self.assertEqual(result, expected)
+
+    @patch("src.emails.get_yesterday", return_value="2025-03-20")
+    def test_maintenance_title(self, mock_get_yesterday):
+        expected = (
+            "Observations of Invasive Species Submitted on 2025-03-20 — "
+            "error: website is temporarily disabled due to maintenance"
+        )
+        result = make_email_title(self.settings, error=True)
+        self.assertEqual(result, expected)
