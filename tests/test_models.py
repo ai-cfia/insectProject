@@ -34,7 +34,7 @@ class TestPredictInvasiveness(unittest.TestCase):
     def test_basic_prediction(self, mock_preprocess, mock_download):
         mock_preprocess.return_value = torch.zeros((1, 3, 224, 224))
         mock_download.return_value.__enter__.return_value = "dummy_path"
-        with patch("builtins.open", mock_open(read_data=b"image_data")):
+        with patch("src.models.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
                 self.s, self.image_sets[:2], self.mock_model, self.default_prediction
             )
@@ -59,7 +59,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         ]
         mock_preprocess.return_value = torch.zeros((1, 3, 224, 224))
         mock_download.return_value.__enter__.return_value = "dummy_path"
-        with patch("builtins.open", mock_open(read_data=b"image_data")):
+        with patch("src.models.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
                 self.s, [self.image_sets[3]], self.mock_model, self.default_prediction
             )
@@ -74,7 +74,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         ]
         mock_preprocess.return_value = torch.zeros((1, 3, 224, 224))
         mock_download.return_value.__enter__.return_value = "dummy_path"
-        with patch("builtins.open", mock_open(read_data=b"image_data")):
+        with patch("src.models.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
                 self.s, [self.image_sets[1]], self.mock_model, self.default_prediction
             )
@@ -86,7 +86,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         self.mock_model.forward.return_value = torch.tensor([])
         mock_preprocess.return_value = torch.zeros((1, 3, 224, 224))
         mock_download.return_value.__enter__.return_value = "dummy_path"
-        with patch("builtins.open", mock_open(read_data=b"image_data")):
+        with patch("src.models.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
                 self.s, [self.image_sets[0]], self.mock_model, self.default_prediction
             )
@@ -101,7 +101,7 @@ class TestPredictInvasiveness(unittest.TestCase):
         ]
         mock_preprocess.return_value = torch.zeros((1, 3, 224, 224))
         mock_download.return_value.__enter__.return_value = "dummy_path"
-        with patch("builtins.open", mock_open(read_data=b"image_data")):
+        with patch("src.models.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
                 self.s, [self.image_sets[1]], self.mock_model, self.default_prediction
             )
@@ -112,7 +112,7 @@ class TestPredictInvasiveness(unittest.TestCase):
     def test_no_processing_after_copyrighted(self, mock_preprocess, mock_download):
         mock_preprocess.return_value = torch.zeros((1, 3, 224, 224))
         mock_download.return_value.__enter__.return_value = "dummy_path"
-        with patch("builtins.open", mock_open(read_data=b"image_data")):
+        with patch("src.models.open", mock_open(read_data=b"image_data")):
             preds = predict_invasiveness(
                 self.s,
                 [self.image_sets[2], self.image_sets[0]],

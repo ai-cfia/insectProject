@@ -17,19 +17,14 @@ from src.settings import Settings
 @validate_call
 def download(url: HttpUrl):
     filename = Path(f"{uuid.uuid4().hex}.jpg")
-
     try:
         with urllib.request.urlopen(str(url)) as response:
             image_data = io.BytesIO(response.read())
-
         image = Image.open(image_data)
-
         if image.mode in ("RGBA", "P"):
             image = image.convert("RGB")
-
         image.save(filename)
         yield filename
-
     finally:
         if filename.exists():
             os.remove(filename)
@@ -63,16 +58,11 @@ if __name__ == "__main__":
     test_url = (
         "https://upload.wikimedia.org/wikipedia/commons/3/3f/JPEG_example_flower.jpg"
     )
-
     # Test downloading and preprocessing
-
     with download(test_url) as test_filename:
         assert test_filename.exists(), "Downloaded image file does not exist."
-
         with open(test_filename, "rb") as f:
             image_bytes = f.read()
-
         tensor = preprocess_image(s, image_bytes)
         assert isinstance(tensor, Tensor) and tensor.shape == (1, 3, 224, 224)
-
     print("All tests passed.")

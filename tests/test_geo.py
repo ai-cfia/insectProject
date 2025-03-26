@@ -2,9 +2,13 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from src.geo import get_city_province_country
+from tests import settings
 
 
 class TestGeocoding(unittest.TestCase):
+    def setUp(self):
+        self.settings = settings.model_copy()
+
     @patch("geopy.geocoders.Nominatim.reverse")
     def test_city_fallbacks(self, mock_reverse):
         test_cases = [
@@ -19,7 +23,7 @@ class TestGeocoding(unittest.TestCase):
 
         for address, expected_city in test_cases:
             mock_reverse.return_value = MagicMock(raw={"address": address})
-            city, _, _ = get_city_province_country((0, 0))
+            city, _, _ = get_city_province_country(self.settings, 0, 0)
             self.assertEqual(city, expected_city)
 
     @patch("geopy.geocoders.Nominatim.reverse")
@@ -77,7 +81,9 @@ class TestGeocoding(unittest.TestCase):
         ]
 
         for i, (coord, expected) in enumerate(test_cases):
-            city, province, country = get_city_province_country(coord)
+            city, province, country = get_city_province_country(
+                self.settings, coord[0], coord[1]
+            )
             self.assertEqual((city, province, country), expected)
 
     @patch("geopy.geocoders.Nominatim.reverse")
@@ -85,16 +91,20 @@ class TestGeocoding(unittest.TestCase):
         mock_reverse.return_value = MagicMock(
             raw={"address": {"state": "California", "country_code": "us"}}
         )
-        city, province, country = get_city_province_country((36.7783, -119.4179))
+        city, province, country = get_city_province_country(
+            self.settings, 36.7783, -119.4179
+        )
         self.assertEqual((city, province, country), ("", "California", "us"))
 
     @patch("geopy.geocoders.Nominatim.reverse")
     def test_empty_address(self, mock_reverse):
         mock_reverse.return_value = MagicMock(raw={"address": {}})
-        city, province, country = get_city_province_country((0.0, 0.0))
+        city, province, country = get_city_province_country(self.settings, 0.0, 0.0)
         self.assertEqual((city, province, country), ("", "", ""))
 
     @patch("geopy.geocoders.Nominatim.reverse", side_effect=Exception("API Error"))
     def test_exception_handling(self, mock_reverse):
-        city, province, country = get_city_province_country((55.7558, 37.6173))
+        city, province, country = get_city_province_country(
+            self.settings, 55.7558, 37.6173
+        )
         self.assertEqual((city, province, country), ("", "", ""))

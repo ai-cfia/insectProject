@@ -11,16 +11,20 @@ log = logging.getLogger(__name__)
 
 @log_call
 @validate_call
-async def get_specie_ids(settings: Settings):
-    async with ApiClient(settings.inat_client_config) as api_client:
+async def get_specie_ids(s: Settings):
+    """Get list of species IDs from project observation rules"""
+    async with ApiClient(s.inat_client_config) as api_client:
+        # Get project details with observation rules
         results = (
             await ProjectsApi(api_client).projects_id_get(
-                [settings.project_id], rule_details="true"
+                [s.project_id], rule_details="true"
             )
         ).results
         if not results:
             log.debug("No project results found.")
             return []
+
+        # Extract taxon IDs from rules that have them
         ids = [
             r.taxon.id
             for r in results[0].project_observation_rules
@@ -30,7 +34,7 @@ async def get_specie_ids(settings: Settings):
 
 
 if __name__ == "__main__":
-    # run with python -m src.species
+    # Example usage: python -m src.species
     import asyncio
 
     settings = Settings()

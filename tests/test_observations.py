@@ -8,10 +8,12 @@ from pydantic import ValidationError
 
 from src.observations import (
     get_all_observations,
+    get_observation_summaries_df,
     get_observations,
     transform_summaries_to_df,
 )
-from src.pydantic_models import ObservationSummary, Region
+from src.preprocess import flag_comments
+from src.pydantic_models import ObservationSummary
 from tests import settings
 
 
@@ -23,7 +25,6 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         self.taxon_names = ["Panthera leo"]
         self.date_from = "2024-01-01"
         self.date_to = "2024-03-01"
-        self.region = Region.CA
         self.per_page = 1
         self.page = 1
 
@@ -37,14 +38,14 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         )
 
         observations = await get_observations(
-            settings=self.settings,
+            s=self.settings,
             taxon_ids=self.taxon_ids,
             taxon_names=self.taxon_names,
             date_from=self.date_from,
             date_to=self.date_to,
-            region=self.region,
             per_page=self.per_page,
             page=self.page,
+            area=self.settings.areas.CA,
         )
 
         self.assertEqual(observations.total_results, 468)
@@ -61,14 +62,14 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         )
 
         observations = await get_observations(
-            settings=self.settings,
+            s=self.settings,
             taxon_ids=self.taxon_ids,
             taxon_names=self.taxon_names,
             date_from=self.date_from,
             date_to=self.date_to,
-            region=self.region,
             per_page=self.per_page,
             page=self.page,
+            area=settings.areas.CA,
         )
 
         self.assertEqual(observations.total_results, 0)
@@ -82,14 +83,14 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(Exception) as context:
             await get_observations(
-                settings=self.settings,
+                s=self.settings,
                 taxon_ids=self.taxon_ids,
                 taxon_names=self.taxon_names,
                 date_from=self.date_from,
                 date_to=self.date_to,
-                region=self.region,
                 per_page=self.per_page,
                 page=self.page,
+                area=settings.areas.CA,
             )
 
         self.assertIn("429 Too Many Requests", str(context.exception))
@@ -104,14 +105,14 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         )
 
         await get_observations(
-            settings=self.settings,
+            s=self.settings,
             taxon_ids=self.taxon_ids,
             taxon_names=self.taxon_names,
             date_from=self.date_from,
             date_to=self.date_to,
-            region=self.region,
             per_page=self.per_page,
             page=self.page,
+            area=settings.areas.CA,
         )
 
         mock_observations_get.assert_called_with(
@@ -126,28 +127,29 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             nelng=self.settings.areas.CA.nelng,
             swlat=self.settings.areas.CA.swlat,
             swlng=self.settings.areas.CA.swlng,
+            order_by=None,
+            order=None,
+            iconic_taxa=None,
         )
 
     @patch(
         "inaturalist_client.ObservationsApi.observations_get", new_callable=AsyncMock
     )
     async def test_get_observations_no_region(self, mock_observations_get):
-        self.region = None  # Ensure no region is passed
-
         mock_observations_get.return_value = AsyncMock(
             total_results=1,
             results=[{"id": 12345, "created_at": datetime(2024, 2, 29, 17, 49, 36)}],
         )
 
         await get_observations(
-            settings=self.settings,
+            s=self.settings,
             taxon_ids=self.taxon_ids,
             taxon_names=self.taxon_names,
             date_from=self.date_from,
             date_to=self.date_to,
-            region=self.region,
             per_page=self.per_page,
             page=self.page,
+            area=None,
         )
 
         mock_observations_get.assert_called_with(
@@ -162,6 +164,9 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             nelng=None,
             swlat=None,
             swlng=None,
+            order_by=None,
+            order=None,
+            iconic_taxa=None,
         )
 
     @patch(
@@ -176,13 +181,13 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         )
 
         observations = await get_observations(
-            settings=self.settings,
+            s=self.settings,
             taxon_ids=self.taxon_ids,
             taxon_names=self.taxon_names,
             date_on=self.date_on,
-            region=self.region,
             per_page=self.per_page,
             page=self.page,
+            area=settings.areas.CA,
         )
 
         self.assertEqual(observations.total_results, 1)
@@ -200,6 +205,9 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             nelng=self.settings.areas.CA.nelng,
             swlat=self.settings.areas.CA.swlat,
             swlng=self.settings.areas.CA.swlng,
+            order_by=None,
+            order=None,
+            iconic_taxa=None,
         )
 
     @patch(
@@ -214,14 +222,14 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         )
 
         await get_observations(
-            settings=self.settings,
+            s=self.settings,
             taxon_ids=self.taxon_ids,
             taxon_names=self.taxon_names,
             date_from=self.date_from,
             date_to=self.date_to,
-            region=self.region,
             per_page=self.per_page,
             page=self.page,
+            area=settings.areas.CA,
         )
 
         mock_observations_get.assert_called_with(
@@ -236,6 +244,9 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             nelng=self.settings.areas.CA.nelng,
             swlat=self.settings.areas.CA.swlat,
             swlng=self.settings.areas.CA.swlng,
+            order_by=None,
+            order=None,
+            iconic_taxa=None,
         )
 
     @patch(
@@ -247,7 +258,6 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         self.date_from = None
         self.date_to = None
         self.date_on = None
-        self.region = None
 
         mock_observations_get.return_value = AsyncMock(
             total_results=0,
@@ -255,15 +265,15 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
         )
 
         await get_observations(
-            self.settings,
-            self.taxon_ids,
-            self.taxon_names,
-            self.date_from,
-            self.date_to,
-            self.date_on,
-            self.region,
-            self.per_page,
-            self.page,
+            s=self.settings,
+            taxon_ids=self.taxon_ids,
+            taxon_names=self.taxon_names,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            date_on=self.date_on,
+            per_page=self.per_page,
+            page=self.page,
+            area=None,
         )
 
         mock_observations_get.assert_called_with(
@@ -278,6 +288,9 @@ class TestGetObservations(unittest.IsolatedAsyncioTestCase):
             nelng=None,
             swlat=None,
             swlng=None,
+            order_by=None,
+            order=None,
+            iconic_taxa=None,
         )
 
 
@@ -296,10 +309,27 @@ class TestObservationSummary(unittest.TestCase):
                 {"url": "https://static.inaturalist.org/photos/354262857/square.jpg"}
             ],
             "geojson": {"coordinates": [-87.7391541636, 41.984022249]},
-            "created_at_details": {"var_date": date(2024, 2, 28)},
+            "created_at_details": {"var_date": datetime(2024, 2, 28)},
             "observed_on": datetime(2024, 2, 28, 0, 0),
             "user": {"login": "spencer_palmer"},
             "uri": "https://www.inaturalist.org/observations/200760772",
+            "comments": [
+                {
+                    "id": 1,
+                    "body": "Great observation! 👍",
+                    "created_at": "2024-02-28T00:00:00",
+                },
+                {
+                    "id": 2,
+                    "body": "Nice find! 🎉 This is amazing!!!",
+                    "created_at": "2024-02-28T00:00:00",
+                },
+                {
+                    "id": 3,
+                    "body": "Wow! Another rare species! 🦁🐾",
+                    "created_at": "2024-02-28T00:00:00",
+                },
+            ],
         }
 
     def test_valid_initialization(self):
@@ -356,6 +386,65 @@ class TestObservationSummary(unittest.TestCase):
         obs = ObservationSummary.model_validate(data)
         self.assertIsNone(obs.name)
 
+    def test_valid_comments(self):
+        obs = ObservationSummary.model_validate(self.example_data)
+        self.assertEqual(
+            obs.comments,
+            [
+                "Great observation! 👍",
+                "Nice find! 🎉 This is amazing!!!",
+                "Wow! Another rare species! 🦁🐾",
+            ],
+        )
+
+    def test_missing_comments(self):
+        data = self.example_data.copy()
+        del data["comments"]
+        obs = ObservationSummary.model_validate(data)
+        self.assertIsNone(obs.comments)
+        self.assertIsNone(obs.cleaned_comments)
+
+    def test_empty_comments(self):
+        data = self.example_data.copy()
+        data["comments"] = []
+        obs = ObservationSummary.model_validate(data)
+        self.assertEqual(obs.comments, [])
+        self.assertIsNone(obs.cleaned_comments)
+
+    def test_cleaned_comments(self):
+        obs = ObservationSummary.model_validate(self.example_data)
+        expected_cleaned_comments = [
+            "great observation",
+            "nice find  this is amazing",
+            "wow another rare species",
+        ]
+        self.assertEqual(obs.cleaned_comments, expected_cleaned_comments)
+
+    def test_flag_comments(self):
+        """Test flagging comments with specific terms"""
+
+        obs = ObservationSummary(
+            id=1,
+            comments=[
+                "This is a rare find!",
+                "Amazing specimen",
+                "Just another observation",
+            ],
+        )
+
+        # Create test settings with specific comment flags
+        test_settings = settings.model_copy()
+        test_settings.comment_flags = ["rare", "amazing"]
+
+        updated_obs = flag_comments(test_settings, obs)
+
+        self.assertTrue("rare find" in updated_obs.flagged_comments[0])
+        self.assertTrue("amazing specimen" in updated_obs.flagged_comments[1])
+        self.assertEqual(len(updated_obs.flagged_terms), 2)
+        self.assertTrue(
+            all(term in updated_obs.flagged_terms for term in ["rare", "amazing"])
+        )
+
 
 class TestGetAllObservations(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -367,69 +456,161 @@ class TestGetAllObservations(unittest.IsolatedAsyncioTestCase):
 
     @patch("src.observations.get_observations", new_callable=AsyncMock)
     async def test_get_all_observations_multiple_pages(self, mock_get_observations):
+        # First page with per_page=1 to get total results, then pagination with actual per_page
         mock_get_observations.side_effect = [
-            AsyncMock(results=[Observation(id=1), Observation(id=2)]),
-            AsyncMock(results=[Observation(id=3), Observation(id=4)]),
-            AsyncMock(results=[]),
+            AsyncMock(
+                total_results=4, results=[Observation(id=1)]
+            ),  # Initial request with per_page=1
+            AsyncMock(
+                total_results=4, results=[Observation(id=1), Observation(id=2)]
+            ),  # First page with actual per_page
+            AsyncMock(
+                total_results=4, results=[Observation(id=3), Observation(id=4)]
+            ),  # Second page
         ]
 
         observations = await get_all_observations(
-            settings=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
+            s=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
         )
 
+        # Verify the results
         self.assertEqual(len(observations), 4)
         self.assertEqual([obs.id for obs in observations], [1, 2, 3, 4])
 
+        # Verify the API calls
+        self.assertEqual(mock_get_observations.call_count, 3)
+
+        # Verify the arguments passed to each call
+        calls = mock_get_observations.call_args_list
+        # First call should be with per_page=1 to get total results
+        self.assertEqual(calls[0][1]["page"], 1)
+        self.assertEqual(calls[0][1]["per_page"], 1)
+        # Subsequent calls should use the actual per_page value
+        self.assertEqual(calls[1][1]["page"], 1)
+        self.assertEqual(calls[1][1]["per_page"], self.per_page)
+        self.assertEqual(calls[2][1]["page"], 2)
+        self.assertEqual(calls[2][1]["per_page"], self.per_page)
+
+        # Verify all other parameters are consistent across calls
+        for call in calls:
+            self.assertEqual(call[1]["taxon_ids"], self.taxon_ids)
+            self.assertEqual(call[1]["s"], self.settings)
+
     @patch("src.observations.get_observations", new_callable=AsyncMock)
     async def test_get_all_observations_single_page(self, mock_get_observations):
-        mock_get_observations.return_value = AsyncMock(results=[Observation(id=1)])
+        mock_get_observations.return_value = AsyncMock(
+            total_results=1,
+            results=[Observation(id=1)],
+        )
 
         observations = await get_all_observations(
-            settings=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
+            s=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
         )
 
         self.assertEqual(len(observations), 1)
         self.assertEqual(observations[0].id, 1)
+        self.assertEqual(mock_get_observations.call_count, 2)
 
     @patch("src.observations.get_observations", new_callable=AsyncMock)
     async def test_get_all_observations_empty_response(self, mock_get_observations):
-        mock_get_observations.return_value = AsyncMock(results=[])
+        mock_get_observations.return_value = AsyncMock(total_results=0, results=[])
 
         observations = await get_all_observations(
-            settings=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
+            s=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
         )
 
         self.assertEqual(len(observations), 0)
+        self.assertEqual(mock_get_observations.call_count, 1)
 
     @patch("src.observations.get_observations", new_callable=AsyncMock)
     async def test_get_all_observations_pagination_logic(self, mock_get_observations):
         mock_get_observations.side_effect = [
-            AsyncMock(results=[Observation(id=1), Observation(id=2)]),
-            AsyncMock(results=[Observation(id=3)]),
-            AsyncMock(results=[]),
+            AsyncMock(total_results=3, results=[Observation(id=1)]),
+            AsyncMock(total_results=3, results=[Observation(id=1), Observation(id=2)]),
+            AsyncMock(total_results=3, results=[Observation(id=3)]),
         ]
 
         observations = await get_all_observations(
-            settings=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
+            s=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
         )
 
         self.assertEqual(len(observations), 3)
         self.assertEqual([obs.id for obs in observations], [1, 2, 3])
+        self.assertEqual(mock_get_observations.call_count, 3)
 
     @patch("src.observations.get_observations", new_callable=AsyncMock)
     async def test_get_all_observations_returned_structure(self, mock_get_observations):
         mock_get_observations.return_value = AsyncMock(
-            results=[Observation(id=1, quality_grade="research")]
+            total_results=1, results=[Observation(id=1, quality_grade="research")]
         )
 
         observations = await get_all_observations(
-            settings=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
+            s=self.settings, taxon_ids=self.taxon_ids, per_page=self.per_page
         )
 
         self.assertEqual(len(observations), 1)
         self.assertIsInstance(observations[0], Observation)
         self.assertEqual(observations[0].id, 1)
         self.assertEqual(observations[0].quality_grade, "research")
+        self.assertEqual(mock_get_observations.call_count, 2)
+
+    @patch("src.observations.get_observations", new_callable=AsyncMock)
+    async def test_get_all_observations_with_date_filter(self, mock_get_observations):
+        date_from = datetime(2024, 1, 1)
+        date_to = datetime(2024, 12, 31)
+
+        mock_get_observations.side_effect = [
+            AsyncMock(total_results=2, results=[Observation(id=1)]),
+            AsyncMock(total_results=2, results=[Observation(id=1), Observation(id=2)]),
+        ]
+
+        observations = await get_all_observations(
+            s=self.settings,
+            taxon_ids=self.taxon_ids,
+            per_page=self.per_page,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+        self.assertEqual(len(observations), 2)
+        self.assertEqual([obs.id for obs in observations], [1, 2])
+        self.assertEqual(mock_get_observations.call_count, 2)
+
+    @patch("src.observations.get_observations", new_callable=AsyncMock)
+    async def test_get_all_observations_with_area_filter(self, mock_get_observations):
+        mock_get_observations.return_value = AsyncMock(
+            total_results=1, results=[Observation(id=1)]
+        )
+
+        observations = await get_all_observations(
+            s=self.settings,
+            taxon_ids=self.taxon_ids,
+            per_page=self.per_page,
+            area=self.settings.areas.CA,
+        )
+
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0].id, 1)
+        self.assertEqual(mock_get_observations.call_count, 2)
+
+    @patch("src.observations.get_observations", new_callable=AsyncMock)
+    async def test_get_all_observations_with_taxon_names(self, mock_get_observations):
+        taxon_names = ["Panthera leo"]
+
+        mock_get_observations.return_value = AsyncMock(
+            total_results=1, results=[Observation(id=1)]
+        )
+
+        observations = await get_all_observations(
+            s=self.settings,
+            taxon_ids=self.taxon_ids,
+            taxon_names=taxon_names,
+            per_page=self.per_page,
+        )
+
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0].id, 1)
+        self.assertEqual(mock_get_observations.call_count, 2)
 
 
 class TestTransformSummariesToDataFrame(unittest.TestCase):
@@ -448,6 +629,11 @@ class TestTransformSummariesToDataFrame(unittest.TestCase):
                 username="user1",
                 taxon_name="Mammalia",
                 taxon_id=40151,
+                comments=[
+                    "Amazing lion sighting!",
+                    "Beautiful specimen",
+                    "Great photo of this majestic creature",
+                ],
             ),
             ObservationSummary(
                 id=2,
@@ -462,6 +648,11 @@ class TestTransformSummariesToDataFrame(unittest.TestCase):
                 username="user2",
                 taxon_name="Mammalia",
                 taxon_id=40152,
+                comments=[
+                    "Rare tiger sighting in this area!",
+                    "Such impressive stripes",
+                    "Look at those powerful legs",
+                ],
             ),
         ]
         self.column_mapping = settings.model_copy().df_column_map_default
@@ -471,7 +662,7 @@ class TestTransformSummariesToDataFrame(unittest.TestCase):
         df = transform_summaries_to_df(self.sample_summaries, self.column_mapping)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(len(df), 2)
-        self.assertListEqual(list(df.columns), self.columns)
+        self.assertTrue(all(col in df.columns for col in self.columns))
 
     def test_missing_fields(self):
         partial_summaries = [ObservationSummary(id=3, quality_grade="research")]
@@ -488,7 +679,7 @@ class TestTransformSummariesToDataFrame(unittest.TestCase):
         df = transform_summaries_to_df([], self.column_mapping)
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(len(df), 0)
-        self.assertListEqual(list(df.columns), self.columns)
+        self.assertTrue(all(col in df.columns for col in self.columns))
 
     def test_missing_optional_fields(self):
         summary = ObservationSummary(id=4, quality_grade="research")
@@ -533,3 +724,60 @@ class TestTransformSummariesToDataFrame(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             transform_summaries_to_df(self.sample_summaries, duplicate_mapping)
+
+
+class TestGetObservationSummariesDf(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.settings = settings.model_copy()
+        self.settings.api_request_delay = 0.0
+        self.taxon_ids = [12345]
+        self.date_on = date(2024, 2, 15)
+
+    @patch("src.observations.get_all_observations", new_callable=AsyncMock)
+    async def test_returns_dataframe(self, mock_get_all_observations):
+        mock_get_all_observations.return_value = [
+            Observation(
+                id=1,
+                quality_grade="research",
+                taxon={
+                    "preferred_common_name": "Lion",
+                    "name": "Panthera leo",
+                    "iconic_taxon_name": "Mammalia",
+                    "id": 40151,
+                },
+                photos=[{"url": "https://example.com/photo.jpg"}],
+                geojson={"coordinates": [-87.7, 41.9]},
+                created_at_details={"var_date": self.date_on},
+                observed_on=datetime(2024, 2, 15),
+                user={"login": "test_user"},
+                uri="https://example.com/1",
+            )
+        ]
+
+        df = await get_observation_summaries_df(
+            s=self.settings,
+            taxon_ids=self.taxon_ids,
+            date_on=self.date_on,
+            area=self.settings.areas.CA,
+        )
+
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(len(df), 1)
+        expected_cols = list(self.settings.df_column_map_default.values())
+        self.assertTrue(all(col in df.columns for col in expected_cols))
+
+    @patch("src.observations.get_all_observations", new_callable=AsyncMock)
+    async def test_empty_returns_empty_dataframe(self, mock_get_all_observations):
+        mock_get_all_observations.return_value = []
+
+        df = await get_observation_summaries_df(
+            s=self.settings,
+            taxon_ids=self.taxon_ids,
+            date_on=self.date_on,
+            area=self.settings.areas.CA,
+        )
+
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(len(df), 0)
+        expected_cols = list(self.settings.df_column_map_default.values())
+        self.assertTrue(all(col in df.columns for col in expected_cols))

@@ -1,11 +1,15 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
-from src.settings import Settings
 from src.species import get_specie_ids
+from tests import settings
 
 
 class TestGetSpecieIds(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.settings = settings.model_copy()
+        self.settings.project_id = "1"
+
     @patch("src.species.ApiClient")
     @patch("src.species.ProjectsApi")
     async def test_returns_taxon_ids(self, mock_api_class, mock_api_client):
@@ -21,8 +25,7 @@ class TestGetSpecieIds(unittest.IsolatedAsyncioTestCase):
         ]
         mock_api_class.return_value = mock_api
 
-        settings = Settings(project_id="1")
-        ids = await get_specie_ids(settings)
+        ids = await get_specie_ids(self.settings)
         self.assertEqual(ids, [1, 2])
 
     @patch("src.species.ApiClient")
@@ -34,8 +37,7 @@ class TestGetSpecieIds(unittest.IsolatedAsyncioTestCase):
         mock_api.projects_id_get.return_value.results = []
         mock_api_class.return_value = mock_api
 
-        settings = Settings(project_id="1")
-        ids = await get_specie_ids(settings)
+        ids = await get_specie_ids(self.settings)
         self.assertEqual(ids, [])
 
     @patch("src.species.ApiClient")
@@ -52,8 +54,7 @@ class TestGetSpecieIds(unittest.IsolatedAsyncioTestCase):
         ]
         mock_api_class.return_value = mock_api
 
-        settings = Settings(project_id="1")
-        ids = await get_specie_ids(settings)
+        ids = await get_specie_ids(self.settings)
         self.assertEqual(ids, [4])
 
     @patch("src.species.ApiClient")
@@ -70,6 +71,5 @@ class TestGetSpecieIds(unittest.IsolatedAsyncioTestCase):
         ]
         mock_api_class.return_value = mock_api
 
-        settings = Settings(project_id="1")
-        ids = await get_specie_ids(settings)
+        ids = await get_specie_ids(self.settings)
         self.assertEqual(ids, [5])

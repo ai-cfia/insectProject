@@ -1,17 +1,20 @@
+import logging
+
 from geopy.geocoders import Nominatim
 from pydantic import validate_call
 
 from src.custom_logging import log_call
+from src.settings import Settings
+
+log = logging.getLogger(__name__)
 
 
-# TODO: would google maps be better?
 @log_call
 @validate_call
-def get_city_province_country(coord: tuple[float, float]):
-    # TODO: add a timeout
-    locator = Nominatim(user_agent="inectsiNatApp", timeout=None)
+def get_city_province_country(s: Settings, lat: float, lon: float):
+    locator = Nominatim(user_agent=s.nominatim_user_agent, timeout=None)
     try:
-        location = locator.reverse(coord, language="en")
+        location = locator.reverse((lat, lon), language="en")
         address = location.raw["address"] if location and location.raw else {}
         city = (
             address.get("city", "")
@@ -24,13 +27,18 @@ def get_city_province_country(coord: tuple[float, float]):
         province, country = address.get("state", ""), address.get("country_code", "")
         return city, province, country
     except Exception as e:
-        print(f"Reverse geocoding failed for {coord}: {e}")
+        log.debug(f"Reverse geocoding failed for ({lat}, {lon}): {e}")
         return "", "", ""
 
 
 if __name__ == "__main__":
     # Test coordinates (latitude, longitude)
     # Run: python -m src.geo
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    s = Settings()
     test_coords = [
         [40.7128, -74.0060],
         (51.5074, -0.1278),
@@ -40,7 +48,7 @@ if __name__ == "__main__":
     ]
 
     for coord in test_coords:
-        city, province, country = get_city_province_country(coord)
+        city, province, country = get_city_province_country(s, coord[0], coord[1])
         print(
             f"Coordinates: {coord} -> City: {city}, Province: {province}, Country: {country}"
         )

@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 @log_call
 @validate_call
 def load_densenet_model(checkpoint_path: str):
+    """Load pretrained DenseNet model from checkpoint"""
     device = torch.device("cpu")
 
     model = densenet121(weights=None)
@@ -29,8 +30,9 @@ def load_densenet_model(checkpoint_path: str):
 
 
 class PredictionLabel(Enum):
+    """Labels for model predictions"""
     INVASIVE = "invasive"
-    NON_INVASIVE = "non_invasive"
+    NON_INVASIVE = "non_invasive" 
     REMOVED_COPYRIGHT = "REMOVED-COPYRIGHT"
 
 
@@ -42,16 +44,19 @@ def predict_invasiveness(
     model: DenseNet,
     default_prediction: PredictionLabel,
 ):
+    """Predict invasiveness for sets of images using DenseNet model"""
     class_index = {0: PredictionLabel.INVASIVE, 1: PredictionLabel.NON_INVASIVE}
     predictions: list[str] = []
 
     for image_set in image_sets:
+        # Skip copyrighted images
         if any("copyright" in url.lower() for url in image_set):
             predictions.append(PredictionLabel.REMOVED_COPYRIGHT.value)
             continue
 
         prediction = default_prediction
 
+        # Check each image in set until invasive found
         for image_url in image_set:
             with download(image_url) as f, open(f, "rb") as image:
                 tensor = preprocess_image(s, image.read())

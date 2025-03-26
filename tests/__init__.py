@@ -6,5 +6,6 @@ settings = Settings(
     smtp_username="user",
     smtp_password="secret",
     sender_email="noreply@example.com",
-    recipient_emails=["a@example.com", "b@example.com"],
+    observations_email_recipients=["a@example.com", "b@example.com"],
+    comments_email_recipients=["x@example.com", "y@example.com"],
 )

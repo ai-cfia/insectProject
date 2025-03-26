@@ -13,3 +13,5 @@ pydantic[email]
 pydantic-settings
 python-dotenv
 Jinja2
+pytest
+tqdm
