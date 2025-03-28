@@ -1,0 +1,17 @@
+numpy
+Pillow
+torch
+torchvision
+urllib3
+pandas
+reverse-geocode
+scipy
+geopy
+requests
+git+https://github.com/ai-cfia/inaturalist-client.git@main
+pydantic[email]
+pydantic-settings
+python-dotenv
+Jinja2
+pytest
+tqdm
