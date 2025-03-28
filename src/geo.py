@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 @log_call
 @validate_call
 def get_city_province_country(s: Settings, lat: float, lon: float):
-    locator = Nominatim(user_agent=s.nominatim_user_agent, timeout=None)
+    locator = Nominatim(user_agent=s.nominatim_user_agent, timeout=10)
     try:
         location = locator.reverse((lat, lon), language="en")
         address = location.raw["address"] if location and location.raw else {}
