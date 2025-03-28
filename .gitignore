@@ -8,7 +8,7 @@ samples/*
 logs/
 
 # VS Code
-.vscode
+# .vscode
 
 # Upload folder
 uploads/

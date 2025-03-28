@@ -9,6 +9,7 @@ from src.pydantic_models import Area, AreaData, ObservationSummary, Species, Spe
 
 # TODO: Add validation for configuration values
 
+
 class AppEnvironment(str, Enum):
     """Environment settings for app"""
 

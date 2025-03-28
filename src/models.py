@@ -31,8 +31,9 @@ def load_densenet_model(checkpoint_path: str):
 
 class PredictionLabel(Enum):
     """Labels for model predictions"""
+
     INVASIVE = "invasive"
-    NON_INVASIVE = "non_invasive" 
+    NON_INVASIVE = "non_invasive"
     REMOVED_COPYRIGHT = "REMOVED-COPYRIGHT"
 
 

@@ -460,6 +460,3 @@ class TestAddLocationDetails(unittest.TestCase):
         self.assertIsNone(result.city)
         self.assertIsNone(result.province)
         self.assertIsNone(result.country)
-
-
-

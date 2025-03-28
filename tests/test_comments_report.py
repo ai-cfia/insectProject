@@ -1,4 +1,3 @@
-import asyncio
 import unittest
 from datetime import date
 from unittest.mock import PropertyMock, patch
@@ -6,13 +5,8 @@ from unittest.mock import PropertyMock, patch
 import pandas as pd
 from jinja2 import Template
 
-from src.comments_report import (
-    build_comments_email_tables,
-    generate_and_send_comments_report,
-    send_flagged_comments_email,
-)
+from src.comments_report import build_comments_email_tables, send_flagged_comments_email
 from src.pydantic_models import EmailTable
-from src.settings import AppEnvironment
 from tests import settings
 
 
