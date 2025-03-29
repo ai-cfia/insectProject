@@ -98,7 +98,9 @@ async def generate_and_send_observation_report(s: Settings):
     # Initialize ML predictions and filter initial dataset
     ca_summaries_df[s.ml_column] = ""
     ca_summaries_df = exclude_non_invasive(s, ca_summaries_df)
-    log.info(f"Filtered to {len(ca_summaries_df)} Canadian observations after excluding non-invasive species")
+    log.info(
+        f"Filtered to {len(ca_summaries_df)} Canadian observations after excluding non-invasive species"
+    )
 
     # Process non-invasive species
     # Get observations for each non-invasive species, predict their class,

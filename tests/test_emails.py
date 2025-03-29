@@ -31,6 +31,7 @@ class TestSendSMTPEmail(unittest.TestCase):
             sender_name="Sender",
             sender_email="sender@example.com",
             observations_email_recipients=["to@example.com"],
+            comments_email_recipients=["to@example.com"],
         )
 
         subject = "Test Subject"

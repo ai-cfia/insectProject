@@ -1,12 +1,13 @@
 import unittest
 from pathlib import Path
 
-from src.images import Settings, download, preprocess_image
+from src.images import download, preprocess_image
+from tests import settings
 
 
 class TestImageUtils(unittest.TestCase):
     def setUp(self):
-        self.settings = Settings()
+        self.settings = settings.model_copy()
         self.test_url = "https://upload.wikimedia.org/wikipedia/commons/3/3f/JPEG_example_flower.jpg"
 
     def test_download_creates_and_removes_file(self):
