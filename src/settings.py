@@ -98,14 +98,14 @@ class Settings(BaseSettings):
     sender_email: EmailStr
     sender_name: str = "AI LAB CFIA"
     email_template_dir: str = "templates"
-    observations_email_recipients: list[EmailStr]
+    observations_email_recipients: list[EmailStr] | None = []
     observations_email_subject_template_name: str = "observations_email_subject.j2"
     observations_email_body_template_name: str = "email_body.html"
     observations_email_empty_message: str = "No observations found"
     observations_email_error_message: str = (
         "An error occurred while processing observations"
     )
-    comments_email_recipients: list[EmailStr]
+    comments_email_recipients: list[EmailStr] | None = []
     comments_email_subject_template_name: str = "comments_email_subject.j2"
     comments_email_body_template_name: str = "email_body.html"
     comments_email_empty_message: str = "No flagged comments found"
